@@ -484,7 +484,16 @@ const BUBBLES = [
   { id: 'painful-part', cat: 'moment', quote: "We're in the painful part.", speaker: 'Trish', context: 'on the scale-up zone' },
   { id: 'sla-solving', cat: 'moment', quote: "SLAs versus solving the problem.", speaker: 'Christy', context: 'on what we optimize for' },
   { id: 'flipped', cat: 'moment', quote: "We've been flipped on our head.", speaker: 'Christy', context: 'on tech-first vs business-first' },
-  { id: 'next-to-impossible', cat: 'moment', quote: "Getting answers is next to impossible.", speaker: 'Erica', context: 'on the data hunt' }
+  { id: 'next-to-impossible', cat: 'moment', quote: "Getting answers is next to impossible.", speaker: 'Erica', context: 'on the data hunt' },
+  { id: 'nightmare', cat: 'mess', quote: "Monday.com is great for things, but for onboarding franchisees, it's a nightmare.", speaker: 'Heather', context: 'on the onboarding process' },
+  { id: 'babysitting', cat: 'mess', quote: "It's a lot of babysitting. It's a lot of other people.", speaker: 'Heather', context: 'on cross-departmental drag' },
+  { id: 'not-intended', cat: 'mess', quote: "When technology doesn't function like it's intended, it tends to impact our team.", speaker: 'Christy', context: "on tech that doesn't work as intended" },
+  { id: 'visual-insight', cat: 'mess', quote: "You don't have visual insight into some of this stuff.", speaker: 'Deb', context: "on closed tickets that aren't done" },
+  { id: 'own-it-all', cat: 'model', quote: "I don't have to know it all and own it all and do it all.", speaker: 'Erica', context: 'on releasing the island' },
+  { id: 'team-around', cat: 'model', quote: "There's been a team built around you.", speaker: 'Christy', context: 'on the shift from solo work' },
+  { id: 'handoff', cat: 'model', quote: "We pick up that piece and we hand that to Brad.", speaker: 'Erica', context: 'on the handoff model in motion' },
+  { id: 'lights-on', cat: 'moment', quote: "We are definitely a core part of the business that keeps the lights on.", speaker: 'Christy', context: 'on franchise team leverage' },
+  { id: 'chess', cat: 'moment', quote: "I'm a chess player. I'm a strategy person.", speaker: 'Christy', context: 'on how to sequence the asks' }
 ];
 
 // ============================================================
@@ -568,6 +577,60 @@ const CARDS = {
     context: "Erica named the experience anyone new to the organization runs into. The institutional knowledge isn't documented — it lives in people. Cross-referencing data across spreadsheets surfaces inconsistencies but no source of truth.",
     implication: "Onboarding any new hire (or replacing Trish) compounds this. Every new person re-discovers the same broken paths.",
     next: "Tie this to the access audit and the Fran Connect case. All three are the same problem at different scales."
+  },
+  'nightmare': {
+    head: "Monday.com is being asked to do a job it wasn't designed for",
+    context: "Monday tracks tasks. It doesn't orchestrate cross-departmental handoffs. The team is using it as the connective tissue between IT, Scorpion, accounting, and the franchisee — which means every dropped ball is invisible until someone manually chases it.",
+    implication: "The tool isn't broken — the workflow underneath it is. Each onboarding becomes a series of follow-ups that should have been automated triggers.",
+    next: "Use the FranConnect sandbox trial as the proving ground. The question isn't 'is FranConnect better than Monday' — it's 'can a system replace the human babysitter.'"
+  },
+  'babysitting': {
+    head: "Customer Success is doing the integration work no system is doing",
+    context: "When IT doesn't close a ticket, when Scorpion doesn't confirm Google setup, when a new zee hasn't enrolled in Zoom — Heather and Ben follow up. The team is the integration layer because no integration layer exists.",
+    implication: "This work is invisible to the rest of the org. Adoption metrics look like CS is behind, when most of the lag is other people's tasks the team is having to monitor.",
+    next: "Track the babysitting hours by department. Add it to Erica's business case spreadsheet. The cost of the integration gap isn't tooling — it's the team's calendar."
+  },
+  'not-intended': {
+    head: "LMS technical debt is now a Customer Success problem",
+    context: "The LMS rollout has known technical issues. The team is being asked to drive adoption of a system with active defects. Kim coined the framing; Christy is using it to make the ELT case.",
+    implication: "Adoption metrics get blamed on the team. The cause is upstream — the tech needs to work before the team can credibly champion it.",
+    next: "Erica's LMS issues spreadsheet is the artifact that translates this into ELT language. Every gap gets a business impact next to it."
+  },
+  'visual-insight': {
+    head: "A closed ticket isn't the same as a done task",
+    context: "Scorpion closes its tickets when its piece is done — but the franchisee's site might still be waiting on Google Business setup or GTM. The closure signal lies.",
+    implication: "The team can't trust the status without verifying it. Verification is the babysitting work. The systems aren't talking — the people are filling the gap.",
+    next: "Map every closure signal that requires human verification. That list is the integration backlog FranConnect (or whatever wins) has to clear."
+  },
+  'own-it-all': {
+    head: "The major/minor model lets ops stop being a one-person bottleneck",
+    context: "Erica named her own pattern: she's been pulling assessments together end-to-end, including pieces (selling, comms) she shouldn't own. The major/minor structure gives her permission to hand off cleanly.",
+    implication: "This is the emotional half of the operating model. The org chart said she didn't have to do it all; the culture hadn't said it yet.",
+    next: "Each cross-functional project gets a 'who picks up each piece' map before it kicks off. The assessments rollout is the first test case."
+  },
+  'team-around': {
+    head: "The old Sandler instinct was to do it all yourself — that's the habit to break",
+    context: "Christy named what most of the team — coming from Sandler-side roles — has been carrying as muscle memory. Doing everything yourself was how Sandler ran for years. Trilliad-era Sandler can't anymore.",
+    implication: "This is partly an emotional shift, partly a control shift. Trust has to be in place before delegation works. The trust exists here — the habit doesn't break overnight.",
+    next: "Each 1:1 with Christy this quarter names one task the person is going to stop owning. Track which ones successfully release."
+  },
+  'handoff': {
+    head: "Major/minor in practice: each project has named owners per phase",
+    context: "Erica's example — she builds assessments, Brad sells them, Jenny does comms. No one owns the project soup-to-nuts. The handoffs are the model.",
+    implication: "This is the unit test for whether major/minor sticks. If handoffs feel clean, the model is working. If they feel like throwing things over a wall, it isn't.",
+    next: "Pilot on the SPE launch. Document where the handoffs break and tune from there."
+  },
+  'lights-on': {
+    head: "The franchise team's revenue performance is the leverage to ask for tools",
+    context: "Trilliad is in cost-analysis mode. Some brands are dipping. The franchise team is not — Udly revenue is strong (Brad + Erica), assessments are close to plan. Christy named this as leverage to keep pushing for FranConnect during a tight quarter.",
+    implication: "Most efficiency asks get harder during cost analysis. This one shouldn't. The team is the brand's revenue floor — that argument carries during a freeze.",
+    next: "Lead the FranConnect business case with the team's revenue contribution, not the inefficiencies. Frame: 'this enables continued performance,' not 'this is what's slowing us down.'"
+  },
+  'chess': {
+    head: "Sequencing matters as much as substance — Christy is staging the asks",
+    context: "Three asks are in motion: LMS fixes, Udly business case, FranConnect trial. Christy is sequencing them deliberately so ELT sees a coherent story, not three separate complaints.",
+    implication: "Bubbling everything up at once dilutes any single ask. Christy is treating this like a multi-move strategy — each artifact lands when the previous one has set the stage.",
+    next: "Don't surface the FranConnect sandbox request until the LMS spreadsheet has been delivered. Order: LMS → Udly → FranConnect. Each builds on the credibility of the last."
   }
 };
 
