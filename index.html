@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Out of the parking lot — Minneapolis brief for Erica</title>
@@ -462,6 +465,9 @@
 <!-- ============== DATA ============== -->
 <script>
 // ============================================================
+// VERSION
+console.log('%c[Erica Dashboard] v4.1 — event-based bubble engine, stable build', 'color:#00aded;font-weight:600');
+
 // CONFIGURATION — update WORKER_URL after deploying Cloudflare Worker
 // ============================================================
 const WORKER_URL = 'https://erica-transcripts.bhbreaux.workers.dev';
@@ -637,10 +643,9 @@ const CARDS = {
 // PASSPHRASE GATE
 // ============================================================
 function checkGate() {
-  if (localStorage.getItem('erica-unlocked') === 'true') {
-    document.getElementById('gate').classList.add('hidden');
-    initApp();
-  }
+  // Always show gate on load — passphrase entry every session for stability.
+  // Clean slate prevents stale-DOM race conditions from killing the bubble engine.
+  try { localStorage.removeItem('erica-unlocked'); } catch (e) {}
 }
 
 document.getElementById('gate-btn').addEventListener('click', tryUnlock);
@@ -662,7 +667,6 @@ async function tryUnlock() {
     if (!res.ok) throw new Error('bad');
     const data = await res.json();
     if (data.ok) {
-      localStorage.setItem('erica-unlocked', 'true');
       localStorage.setItem('erica-pass', pass);
       document.getElementById('gate').classList.add('hidden');
       initApp();
@@ -746,58 +750,79 @@ function pickFreshPosition() {
 }
 
 function spawnBubble() {
-  const posIdx = pickFreshPosition();
-  if (posIdx === -1) return;
-
-  const quote = pickFreshQuote();
-  const pos = POSITIONS[posIdx];
-  const arrow = ARROWS[posIdx % ARROWS.length];
-
-  occupiedPositions.add(posIdx);
-  recentlyShown.push(quote.id);
-  if (recentlyShown.length > RECENT_QUOTES_WINDOW) recentlyShown.shift();
-
+  // CRITICAL: check DOM availability FIRST, before any state mutation.
+  // If field isn't ready, return without polluting occupiedPositions —
+  // otherwise positions get marked permanently dead on race conditions.
   const field = document.getElementById('bubble-field');
-  if (!field) return;
+  if (!field) return false;
 
-  const el = document.createElement('div');
-  el.className = `bubble ${quote.cat} ${arrow} entering`;
-  el.dataset.id = quote.id;
-  el.dataset.pos = posIdx;
-  Object.assign(el.style, {
-    top: pos.top || 'auto',
-    left: pos.left || 'auto',
-    right: pos.right || 'auto',
-    bottom: pos.bottom || 'auto',
-    animation: `${pos.drift} ${pos.dur}s ease-in-out infinite`
-  });
-  el.innerHTML = `
-    <div class="bubble-quote">"${quote.quote}"</div>
-    <div class="bubble-attr"><strong>${quote.speaker}</strong> · ${quote.context}</div>
-  `;
-  el.addEventListener('click', () => openExpansion(quote.id, quote.cat));
-  field.appendChild(el);
+  const posIdx = pickFreshPosition();
+  if (posIdx === -1) return false;
 
-  // Trigger fade-in: remove .entering after a paint cycle so transition runs
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      el.classList.remove('entering');
+  let quote;
+  try {
+    quote = pickFreshQuote();
+    if (!quote) return false;
+  } catch (err) {
+    console.error('[bubble] pickFreshQuote failed:', err);
+    return false;
+  }
+
+  try {
+    const pos = POSITIONS[posIdx];
+    const arrow = ARROWS[posIdx % ARROWS.length];
+
+    // Mark state ONLY after all checks pass
+    occupiedPositions.add(posIdx);
+    recentlyShown.push(quote.id);
+    if (recentlyShown.length > RECENT_QUOTES_WINDOW) recentlyShown.shift();
+
+    const el = document.createElement('div');
+    el.className = `bubble ${quote.cat} ${arrow} entering`;
+    el.dataset.id = quote.id;
+    el.dataset.pos = posIdx;
+    Object.assign(el.style, {
+      top: pos.top || 'auto',
+      left: pos.left || 'auto',
+      right: pos.right || 'auto',
+      bottom: pos.bottom || 'auto',
+      animation: `${pos.drift} ${pos.dur}s ease-in-out infinite`
     });
-  });
+    el.innerHTML = `
+      <div class="bubble-quote">"${quote.quote}"</div>
+      <div class="bubble-attr"><strong>${quote.speaker}</strong> · ${quote.context}</div>
+    `;
+    el.addEventListener('click', () => openExpansion(quote.id, quote.cat));
+    field.appendChild(el);
 
-  // Schedule lifecycle: live, then fade out, then remove
-  const lifetime = BUBBLE_LIFETIME_MIN + Math.random() * (BUBBLE_LIFETIME_MAX - BUBBLE_LIFETIME_MIN);
-  let fadeTimer = setTimeout(() => fadeOut(el, posIdx), lifetime);
+    // Trigger fade-in: remove .entering after a paint cycle so transition runs
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.classList.remove('entering');
+      });
+    });
 
-  // Hover pause — clear timer on enter, give fresh time on leave
-  el.addEventListener('mouseenter', () => {
-    if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
-  });
-  el.addEventListener('mouseleave', () => {
-    if (!el.classList.contains('fading') && !fadeTimer) {
-      fadeTimer = setTimeout(() => fadeOut(el, posIdx), HOVER_REPRIEVE_MS);
-    }
-  });
+    // Schedule lifecycle: live → fade out → remove
+    const lifetime = BUBBLE_LIFETIME_MIN + Math.random() * (BUBBLE_LIFETIME_MAX - BUBBLE_LIFETIME_MIN);
+    let fadeTimer = setTimeout(() => fadeOut(el, posIdx), lifetime);
+
+    // Hover pause — clear timer on enter, give fresh time on leave
+    el.addEventListener('mouseenter', () => {
+      if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+    });
+    el.addEventListener('mouseleave', () => {
+      if (!el.classList.contains('fading') && !fadeTimer) {
+        fadeTimer = setTimeout(() => fadeOut(el, posIdx), HOVER_REPRIEVE_MS);
+      }
+    });
+    return true;
+  } catch (err) {
+    // On any error during DOM construction, release the position so it
+    // doesn't get marked dead forever
+    console.error('[bubble] spawn failed, releasing position:', err);
+    occupiedPositions.delete(posIdx);
+    return false;
+  }
 }
 
 function fadeOut(el, posIdx) {
@@ -813,12 +838,16 @@ function fadeOut(el, posIdx) {
 }
 
 function tickSpawner() {
-  const field = document.getElementById('bubble-field');
-  if (field) {
-    const visible = field.querySelectorAll('.bubble:not(.fading)').length;
-    if (visible < TARGET_VISIBLE) {
-      spawnBubble();
+  try {
+    const field = document.getElementById('bubble-field');
+    if (field) {
+      const visible = field.querySelectorAll('.bubble:not(.fading)').length;
+      if (visible < TARGET_VISIBLE) {
+        spawnBubble();
+      }
     }
+  } catch (err) {
+    console.error('[bubble] tickSpawner failed:', err);
   }
   const next = SPAWN_MIN_MS + Math.random() * (SPAWN_MAX_MS - SPAWN_MIN_MS);
   setTimeout(tickSpawner, next);
@@ -830,14 +859,20 @@ function renderBubbles() {
   occupiedPositions.clear();
   recentlyShown.length = 0;
 
-  // Ramp up: spawn one bubble every ~350ms until we hit target
+  // Ramp up: spawn one bubble every ~350ms until we hit target.
+  // Only count successful spawns. Give up after MAX_INIT_ATTEMPTS to
+  // prevent infinite spin if something's wrong with the DOM.
   let spawned = 0;
+  let attempts = 0;
+  const MAX_INIT_ATTEMPTS = 30;
   const initInterval = setInterval(() => {
-    spawnBubble();
-    spawned++;
-    if (spawned >= TARGET_VISIBLE) {
+    attempts++;
+    if (spawnBubble()) spawned++;
+    if (spawned >= TARGET_VISIBLE || attempts >= MAX_INIT_ATTEMPTS) {
       clearInterval(initInterval);
-      // Start steady-state spawner after a brief settle
+      if (spawned < TARGET_VISIBLE) {
+        console.warn(`[bubble] init reached max attempts (${attempts}) with only ${spawned}/${TARGET_VISIBLE} spawned`);
+      }
       setTimeout(tickSpawner, 1500);
     }
   }, 350);
