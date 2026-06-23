@@ -156,19 +156,18 @@
   .bubble {
     position: absolute; padding: 16px 18px 14px;
     border-radius: 16px; cursor: pointer;
-    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, opacity 0.8s ease;
     max-width: 250px; min-width: 180px;
     box-shadow: 0 2px 8px rgba(33, 36, 92, 0.08);
-    opacity: 0;
-    animation: bubbleAppear 0.8s ease-out forwards;
+    opacity: 1;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
   }
-  @keyframes bubbleAppear { to { opacity: 1; } }
+  .bubble.entering { opacity: 0; transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
+  .bubble.fading { opacity: 0; transition: opacity 1.2s cubic-bezier(0.4, 0, 1, 1); }
   .bubble:hover {
     transform: scale(1.04) translateY(-2px) !important;
     box-shadow: 0 10px 28px rgba(33, 36, 92, 0.16);
     z-index: 20;
   }
-  .bubble.fading { opacity: 0; }
 
   .bubble.mess { background: var(--mess-bg); border: 1px solid var(--mess-border); }
   .bubble.mess:hover { border-color: var(--passionate); }
@@ -691,107 +690,160 @@ function initApp() {
 // BUBBLE FIELD
 // ============================================================
 const POSITIONS = [
-  { top: '2%',  left: '3%',  drift: 'drift1', dur: 22 },
-  { top: '10%', right: '4%', drift: 'drift2', dur: 26 },
-  { top: '32%', left: '18%', drift: 'drift3', dur: 28 },
-  { top: '44%', right: '10%', drift: 'drift1', dur: 24 },
-  { top: '4%',  left: '36%', drift: 'drift2', dur: 30 },
-  { top: '60%', left: '3%',  drift: 'drift3', dur: 26 },
-  { top: '22%', left: '52%', drift: 'drift1', dur: 25 },
-  { top: '58%', right: '5%', drift: 'drift2', dur: 27 },
-  { top: '76%', left: '28%', drift: 'drift3', dur: 23 }
+  { top: '2%',  left: '3%',   drift: 'drift1', dur: 22 },
+  { top: '6%',  left: '38%',  drift: 'drift2', dur: 30 },
+  { top: '8%',  right: '4%',  drift: 'drift3', dur: 26 },
+  { top: '20%', left: '20%',  drift: 'drift3', dur: 28 },
+  { top: '22%', right: '28%', drift: 'drift1', dur: 25 },
+  { top: '30%', left: '52%',  drift: 'drift2', dur: 27 },
+  { top: '36%', left: '4%',   drift: 'drift1', dur: 24 },
+  { top: '44%', right: '8%',  drift: 'drift2', dur: 24 },
+  { top: '50%', left: '28%',  drift: 'drift3', dur: 26 },
+  { top: '58%', right: '6%',  drift: 'drift1', dur: 27 },
+  { top: '64%', left: '50%',  drift: 'drift3', dur: 23 },
+  { top: '70%', left: '2%',   drift: 'drift2', dur: 26 },
+  { top: '76%', right: '24%', drift: 'drift1', dur: 25 },
+  { top: '82%', left: '30%',  drift: 'drift2', dur: 28 }
 ];
-const ARROWS = ['arrow-br','arrow-bl','arrow-bc','arrow-br','arrow-bl','arrow-bc','arrow-br','arrow-bl','arrow-bc'];
+const ARROWS = ['arrow-br','arrow-bl','arrow-bc'];
 
-let activeBubbles = []; // currently displayed bubble ids
-let bubblePool = [];    // unused bubble ids waiting to rotate in
+// ============================================================
+// BUBBLE ENGINE — event-based particle system
+//
+// Each bubble is an independent lifecycle (birth → live → death),
+// not a slot that gets refilled. The spawner maintains TARGET_VISIBLE
+// bubbles on screen by spawning fresh ones whenever count drops.
+// ============================================================
+const TARGET_VISIBLE = 9;
+const BUBBLE_LIFETIME_MIN = 5500;   // ms visible before fade-out begins
+const BUBBLE_LIFETIME_MAX = 9500;
+const FADE_OUT_MS = 1200;
+const SPAWN_MIN_MS = 700;
+const SPAWN_MAX_MS = 1500;
+const RECENT_QUOTES_WINDOW = 12;    // don't repeat from last N shown
+const HOVER_REPRIEVE_MS = 2500;     // fresh lifetime after mouse leaves
 
-function renderBubbles() {
-  const field = document.getElementById('bubble-field');
-  field.innerHTML = '';
-  const shuffled = [...BUBBLES].sort(() => Math.random() - 0.5);
-  activeBubbles = shuffled.slice(0, 9);
-  bubblePool = shuffled.slice(9);
-  activeBubbles.forEach((b, i) => {
-    const el = makeBubbleEl(b, i);
-    field.appendChild(el);
-    // Stagger each bubble's rotation: 3s-5s display window, offset by position
-    const cycleMs = 3000 + (i * 300) + Math.random() * 2000; // 3-5s staggered
-    scheduleBubbleRotation(i, cycleMs);
-  });
-}
+const occupiedPositions = new Set();  // position indices currently in use
+const recentlyShown = [];              // sliding window of quote ids
 
-function scheduleBubbleRotation(posIdx, cycleMs) {
-  setTimeout(() => {
-    swapBubbleAtPos(posIdx);
-    // Re-schedule with slight randomness to avoid lockstep
-    const nextCycle = 3000 + Math.random() * 2000;
-    scheduleBubbleRotation(posIdx, nextCycle);
-  }, cycleMs);
-}
-
-function swapBubbleAtPos(posIdx) {
-  if (bubblePool.length === 0) {
-    const activeIds = new Set(activeBubbles.map(b => b && b.id));
-    bubblePool = BUBBLES.filter(b => !activeIds.has(b.id)).sort(() => Math.random() - 0.5);
+function pickFreshQuote() {
+  const available = BUBBLES.filter(b => !recentlyShown.includes(b.id));
+  if (available.length === 0) {
+    // Pool exhausted — release oldest half of the window
+    recentlyShown.splice(0, Math.floor(recentlyShown.length / 2));
+    return pickFreshQuote();
   }
-  if (bubblePool.length === 0) return;
-
-  const field = document.getElementById('bubble-field');
-  const el = field.querySelector(`.bubble[data-pos="${posIdx}"]`);
-  if (!el) return;
-
-  const oldId = el.dataset.id;
-  const newBubble = bubblePool.shift();
-  const oldBubble = BUBBLES.find(b => b.id === oldId);
-  if (oldBubble) bubblePool.push(oldBubble);
-  activeBubbles[posIdx] = newBubble;
-
-  // Phase 1: fade out in place (don't touch animation or DOM position)
-  el.classList.add('fading');
-
-  setTimeout(() => {
-    // Phase 2: swap content + category class while invisible, keep element alive
-    el.classList.remove('mess', 'model', 'moment');
-    el.classList.add(newBubble.cat);
-    el.dataset.id = newBubble.id;
-    el.innerHTML = `
-      <div class="bubble-quote">"${newBubble.quote}"</div>
-      <div class="bubble-attr"><strong>${newBubble.speaker}</strong> · ${newBubble.context}</div>
-    `;
-    // Re-bind click for new bubble
-    el.onclick = () => openExpansion(newBubble.id, newBubble.cat);
-    // Phase 3: fade back in
-    requestAnimationFrame(() => {
-      el.classList.remove('fading');
-    });
-  }, 800);
+  return available[Math.floor(Math.random() * available.length)];
 }
 
-function makeBubbleEl(b, posIdx) {
+function pickFreshPosition() {
+  const free = [];
+  for (let i = 0; i < POSITIONS.length; i++) {
+    if (!occupiedPositions.has(i)) free.push(i);
+  }
+  if (free.length === 0) return -1;
+  return free[Math.floor(Math.random() * free.length)];
+}
+
+function spawnBubble() {
+  const posIdx = pickFreshPosition();
+  if (posIdx === -1) return;
+
+  const quote = pickFreshQuote();
   const pos = POSITIONS[posIdx];
-  const arrow = ARROWS[posIdx];
+  const arrow = ARROWS[posIdx % ARROWS.length];
+
+  occupiedPositions.add(posIdx);
+  recentlyShown.push(quote.id);
+  if (recentlyShown.length > RECENT_QUOTES_WINDOW) recentlyShown.shift();
+
+  const field = document.getElementById('bubble-field');
+  if (!field) return;
+
   const el = document.createElement('div');
-  el.className = `bubble ${b.cat} ${arrow}`;
-  el.dataset.id = b.id;
+  el.className = `bubble ${quote.cat} ${arrow} entering`;
+  el.dataset.id = quote.id;
   el.dataset.pos = posIdx;
   Object.assign(el.style, {
     top: pos.top || 'auto',
     left: pos.left || 'auto',
     right: pos.right || 'auto',
     bottom: pos.bottom || 'auto',
-    animation: `bubbleAppear 0.8s ease-out forwards, ${pos.drift} ${pos.dur}s ease-in-out infinite`,
-    animationDelay: `${posIdx * 0.12}s, ${posIdx * 0.4}s`
+    animation: `${pos.drift} ${pos.dur}s ease-in-out infinite`
   });
   el.innerHTML = `
-    <div class="bubble-quote">"${b.quote}"</div>
-    <div class="bubble-attr"><strong>${b.speaker}</strong> · ${b.context}</div>
+    <div class="bubble-quote">"${quote.quote}"</div>
+    <div class="bubble-attr"><strong>${quote.speaker}</strong> · ${quote.context}</div>
   `;
-  el.addEventListener('click', () => openExpansion(b.id, b.cat));
-  return el;
+  el.addEventListener('click', () => openExpansion(quote.id, quote.cat));
+  field.appendChild(el);
+
+  // Trigger fade-in: remove .entering after a paint cycle so transition runs
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.classList.remove('entering');
+    });
+  });
+
+  // Schedule lifecycle: live, then fade out, then remove
+  const lifetime = BUBBLE_LIFETIME_MIN + Math.random() * (BUBBLE_LIFETIME_MAX - BUBBLE_LIFETIME_MIN);
+  let fadeTimer = setTimeout(() => fadeOut(el, posIdx), lifetime);
+
+  // Hover pause — clear timer on enter, give fresh time on leave
+  el.addEventListener('mouseenter', () => {
+    if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+  });
+  el.addEventListener('mouseleave', () => {
+    if (!el.classList.contains('fading') && !fadeTimer) {
+      fadeTimer = setTimeout(() => fadeOut(el, posIdx), HOVER_REPRIEVE_MS);
+    }
+  });
 }
 
-// rotateBubbles replaced by scheduleBubbleRotation + swapBubbleAtPos
+function fadeOut(el, posIdx) {
+  if (!el || !el.parentNode) {
+    occupiedPositions.delete(posIdx);
+    return;
+  }
+  el.classList.add('fading');
+  setTimeout(() => {
+    occupiedPositions.delete(posIdx);
+    if (el.parentNode) el.parentNode.removeChild(el);
+  }, FADE_OUT_MS);
+}
+
+function tickSpawner() {
+  const field = document.getElementById('bubble-field');
+  if (field) {
+    const visible = field.querySelectorAll('.bubble:not(.fading)').length;
+    if (visible < TARGET_VISIBLE) {
+      spawnBubble();
+    }
+  }
+  const next = SPAWN_MIN_MS + Math.random() * (SPAWN_MAX_MS - SPAWN_MIN_MS);
+  setTimeout(tickSpawner, next);
+}
+
+function renderBubbles() {
+  const field = document.getElementById('bubble-field');
+  if (field) field.innerHTML = '';
+  occupiedPositions.clear();
+  recentlyShown.length = 0;
+
+  // Ramp up: spawn one bubble every ~350ms until we hit target
+  let spawned = 0;
+  const initInterval = setInterval(() => {
+    spawnBubble();
+    spawned++;
+    if (spawned >= TARGET_VISIBLE) {
+      clearInterval(initInterval);
+      // Start steady-state spawner after a brief settle
+      setTimeout(tickSpawner, 1500);
+    }
+  }, 350);
+}
+
+// makeBubbleEl + rotation functions retired — spawnBubble owns full lifecycle
 
 // ============================================================
 // EXPANSION
