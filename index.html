@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Out of the parking lot — Minneapolis brief for Erica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Official Sandler palette */
+    --stable: #21245c;
+    --stable-dark: #14193f;
+    --fresh: #00aded;
+    --energetic: #0045c2;
+    --passionate: #e34554;
+    --fireball: #f05a28;
+    --limitless: #fab040;
+    --black: #000000;
+    --gray: #ededed;
+    --white: #ffffff;
+    /* Tints for bubbles */
+    --mess-bg: #fce8ea;
+    --mess-border: #f5b8be;
+    --mess-text: #b5341e;
+    --model-bg: #e0f4fd;
+    --model-border: #9adbf3;
+    --model-text: #21245c;
+    --moment-bg: #fef1d9;
+    --moment-border: #f6d896;
+    --moment-text: #8a5b08;
+    /* Neutrals */
+    --ink: #1a1a1a;
+    --ink-muted: #5a5c6b;
+    --ink-soft: #8a8c99;
+    --paper: #fafaf7;
+    --paper-warm: #f4f1ea;
+    --rule: #ededed;
+    --rule-strong: #d9d6cc;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---------- Passphrase gate ---------- */
+  .gate {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(33, 36, 92, 0.96);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  .gate.hidden { display: none; }
+  .gate-card {
+    background: #fff; border-radius: 12px; padding: 36px 36px 30px;
+    max-width: 420px; width: calc(100% - 32px);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+  }
+  .gate-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 26px; font-weight: 500; color: var(--stable);
+    margin-bottom: 8px; letter-spacing: -0.01em;
+  }
+  .gate-sub {
+    font-size: 14px; color: var(--ink-muted); margin-bottom: 24px; line-height: 1.5;
+  }
+  .gate-input {
+    width: 100%; border: 1px solid var(--rule-strong); border-radius: 8px;
+    padding: 14px 16px; font-family: inherit; font-size: 15px; color: var(--ink);
+    background: var(--paper); transition: all 0.15s ease; margin-bottom: 12px;
+  }
+  .gate-input:focus {
+    outline: none; border-color: var(--fresh); background: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.12);
+  }
+  .gate-btn {
+    width: 100%; background: var(--stable); color: #fff; border: none;
+    padding: 14px; border-radius: 8px; font-family: inherit; font-size: 15px;
+    font-weight: 500; cursor: pointer; transition: background 0.15s ease;
+  }
+  .gate-btn:hover { background: var(--energetic); }
+  .gate-error {
+    font-size: 13px; color: var(--passionate); margin-top: 10px; min-height: 18px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    background: var(--stable); color: #fff;
+    padding: 56px 32px 48px; position: relative; overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; top: 0; right: 0; width: 60%; height: 100%; opacity: 0.08;
+    background:
+      radial-gradient(circle at top right, var(--fireball) 0%, transparent 60%),
+      radial-gradient(circle at bottom right, var(--limitless) 0%, transparent 50%);
+  }
+  .hero-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+  .hero-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .hero-eyebrow-line { width: 32px; height: 1px; background: var(--fresh); }
+  .hero-eyebrow-text {
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--fresh); font-weight: 500;
+  }
+  .hero-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: clamp(36px, 6vw, 64px); font-weight: 500;
+    line-height: 1.02; letter-spacing: -0.02em;
+    margin-bottom: 20px; max-width: 920px;
+  }
+  .hero-title em { font-style: italic; color: var(--fireball); font-weight: 400; }
+  .hero-sub {
+    font-size: clamp(15px, 1.4vw, 17px); line-height: 1.6;
+    color: rgba(255,255,255,0.88); max-width: 680px;
+  }
+  .hero-sub strong { color: var(--fresh); font-weight: 500; }
+
+  /* ---------- Category strip ---------- */
+  .cats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: #fff; border-bottom: 1px solid var(--rule);
+    max-width: 1100px; margin: 0 auto;
+  }
+  .cat { padding: 20px 24px; display: flex; flex-direction: column; gap: 4px; }
+  .cat + .cat { border-left: 1px solid var(--rule); }
+  .cat-head { display: flex; align-items: center; gap: 12px; }
+  .cat-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .cat-dot.mess { background: var(--passionate); box-shadow: 0 0 0 5px rgba(227, 69, 84, 0.14); }
+  .cat-dot.model { background: var(--fresh); box-shadow: 0 0 0 5px rgba(0, 173, 237, 0.14); }
+  .cat-dot.moment { background: var(--limitless); box-shadow: 0 0 0 5px rgba(250, 176, 64, 0.18); }
+  .cat-name {
+    font-family: 'Fraunces', serif; font-size: 19px; font-weight: 500;
+    color: var(--stable); letter-spacing: -0.01em;
+  }
+  .cat-desc {
+    font-size: 12px; color: var(--ink-muted); margin-left: 24px;
+    line-height: 1.4; letter-spacing: 0.02em;
+  }
+
+  /* ---------- Bubble field ---------- */
+  .bubbles-section { background: var(--paper); padding: 32px 24px 24px; }
+  .bubbles-inner { max-width: 1100px; margin: 0 auto; }
+  .bubbles-hint {
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-muted); font-weight: 500; margin-bottom: 16px; padding: 0 8px;
+  }
+  .bubble-field { position: relative; height: 480px; width: 100%; }
+
+  .bubble {
+    position: absolute; padding: 16px 18px 14px;
+    border-radius: 16px; cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, opacity 0.6s ease;
+    max-width: 250px; min-width: 180px;
+    box-shadow: 0 2px 8px rgba(33, 36, 92, 0.08);
+    opacity: 0;
+    animation: bubbleAppear 0.8s ease-out forwards;
+  }
+  @keyframes bubbleAppear { to { opacity: 1; } }
+  .bubble:hover {
+    transform: scale(1.04) translateY(-2px) !important;
+    box-shadow: 0 10px 28px rgba(33, 36, 92, 0.16);
+    z-index: 20;
+  }
+  .bubble.fading { opacity: 0; }
+
+  .bubble.mess { background: var(--mess-bg); border: 1px solid var(--mess-border); }
+  .bubble.mess:hover { border-color: var(--passionate); }
+  .bubble.model { background: var(--model-bg); border: 1px solid var(--model-border); }
+  .bubble.model:hover { border-color: var(--fresh); }
+  .bubble.moment { background: var(--moment-bg); border: 1px solid var(--moment-border); }
+  .bubble.moment:hover { border-color: var(--limitless); }
+
+  .bubble::before, .bubble::after { content: ''; position: absolute; width: 0; height: 0; }
+
+  /* All tails in bottom half — bubbles speak DOWN toward the chat */
+  .arrow-bl::before { bottom: -10px; left: 28px; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 11px solid var(--mess-border); }
+  .arrow-bl::after  { bottom: -8px;  left: 30px; border-left: 9px solid transparent;  border-right: 9px solid transparent;  border-top: 9px solid var(--mess-bg); }
+  .arrow-br::before { bottom: -10px; right: 28px; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 11px solid var(--mess-border); }
+  .arrow-br::after  { bottom: -8px;  right: 30px; border-left: 9px solid transparent;  border-right: 9px solid transparent;  border-top: 9px solid var(--mess-bg); }
+  .arrow-bc::before { bottom: -10px; left: 50%; transform: translateX(-50%); border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 11px solid var(--mess-border); }
+  .arrow-bc::after  { bottom: -8px;  left: 50%; transform: translateX(-50%); border-left: 9px solid transparent;  border-right: 9px solid transparent;  border-top: 9px solid var(--mess-bg); }
+
+  .bubble.model.arrow-bl::before, .bubble.model.arrow-br::before, .bubble.model.arrow-bc::before { border-top-color: var(--model-border); }
+  .bubble.model.arrow-bl::after,  .bubble.model.arrow-br::after,  .bubble.model.arrow-bc::after  { border-top-color: var(--model-bg); }
+  .bubble.moment.arrow-bl::before, .bubble.moment.arrow-br::before, .bubble.moment.arrow-bc::before { border-top-color: var(--moment-border); }
+  .bubble.moment.arrow-bl::after,  .bubble.moment.arrow-br::after,  .bubble.moment.arrow-bc::after  { border-top-color: var(--moment-bg); }
+
+  .bubble-quote {
+    font-family: 'Fraunces', Georgia, serif; font-size: 14px;
+    line-height: 1.4; font-style: italic; color: var(--ink); margin-bottom: 10px;
+  }
+  .bubble-attr {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-muted); font-weight: 500;
+  }
+  .bubble-attr strong { font-weight: 600; }
+  .bubble.mess .bubble-attr strong { color: var(--mess-text); }
+  .bubble.model .bubble-attr strong { color: var(--model-text); }
+  .bubble.moment .bubble-attr strong { color: var(--moment-text); }
+
+  /* Drift animations — applied via inline style for variation */
+  @keyframes drift1 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(14px,-10px); } 50% { transform: translate(-6px,14px); } 75% { transform: translate(-16px,-6px); } }
+  @keyframes drift2 { 0%,100% { transform: translate(0,0); } 33% { transform: translate(-14px,12px); } 66% { transform: translate(12px,-14px); } }
+  @keyframes drift3 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(16px,10px); } }
+
+  /* ---------- Expansion panel ---------- */
+  .expansion {
+    background: #fff; border-top: 1px solid var(--rule);
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.4s ease;
+  }
+  .expansion.open { max-height: 700px; padding: 32px 32px 36px; }
+  .exp-inner { max-width: 1100px; margin: 0 auto; }
+  .exp-tag {
+    display: inline-block; font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; padding: 4px 10px; border-radius: 12px;
+    font-weight: 600; margin-bottom: 12px;
+  }
+  .exp-tag.mess { background: var(--mess-bg); color: var(--mess-text); }
+  .exp-tag.model { background: var(--model-bg); color: var(--model-text); }
+  .exp-tag.moment { background: var(--moment-bg); color: var(--moment-text); }
+  .exp-head {
+    font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500;
+    color: var(--stable); line-height: 1.2; letter-spacing: -0.01em;
+    margin-bottom: 14px;
+  }
+  .exp-context {
+    font-size: 15px; line-height: 1.6; color: var(--ink); margin-bottom: 20px;
+  }
+  .exp-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 14px;
+  }
+  .exp-block {
+    padding: 16px 18px; border-radius: 8px; background: var(--paper);
+    border-left: 3px solid var(--fresh);
+  }
+  .exp-label {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-muted); font-weight: 600; margin-bottom: 8px;
+  }
+  .exp-text { font-size: 13.5px; line-height: 1.55; color: var(--ink); }
+  .exp-close {
+    background: none; border: 1px solid var(--rule-strong); color: var(--ink-muted);
+    font-size: 12px; cursor: pointer; font-family: inherit;
+    padding: 8px 16px; border-radius: 6px; transition: all 0.15s ease;
+  }
+  .exp-close:hover { border-color: var(--stable); color: var(--stable); }
+
+  /* ---------- Sharp divider between bubbles and chat ---------- */
+  .divider {
+    height: 1px; background: var(--stable);
+    max-width: 1100px; margin: 32px auto 0;
+    position: relative;
+  }
+  .divider::before {
+    content: ''; position: absolute; left: -32px; right: -32px; top: 0;
+    height: 1px; background: linear-gradient(90deg, transparent, var(--stable) 10%, var(--stable) 90%, transparent);
+  }
+
+  /* ---------- Chat ---------- */
+  .chat-section {
+    background: #fff; padding: 48px 32px 56px;
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .chat-section.visible { opacity: 1; transform: translateY(0); }
+  .chat-inner { max-width: 1100px; margin: 0 auto; }
+  .chat-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .chat-eyebrow-line { width: 24px; height: 1px; background: var(--fresh); }
+  .chat-eyebrow-text {
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--fresh); font-weight: 500;
+  }
+  .chat-title {
+    font-family: 'Fraunces', serif; font-size: 30px; font-weight: 500;
+    color: var(--stable); letter-spacing: -0.01em; margin-bottom: 24px;
+  }
+  .chat-box { display: flex; gap: 10px; margin-bottom: 14px; }
+  .chat-input {
+    flex: 1; border: 1px solid var(--rule-strong); border-radius: 8px;
+    padding: 16px 18px; font-family: inherit; font-size: 15px;
+    color: var(--ink); background: var(--paper); transition: all 0.15s ease;
+  }
+  .chat-input:focus {
+    outline: none; border-color: var(--fresh); background: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 173, 237, 0.12);
+  }
+  .chat-send {
+    background: var(--stable); color: #fff; border: none;
+    padding: 0 28px; border-radius: 8px; font-family: inherit;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: background 0.15s ease; white-space: nowrap;
+  }
+  .chat-send:hover { background: var(--energetic); }
+  .chat-send:disabled { background: var(--ink-soft); cursor: not-allowed; }
+
+  .starters { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .starter {
+    background: #fff; border: 1px solid var(--rule); border-radius: 16px;
+    padding: 7px 14px; font-size: 12px; color: var(--ink-muted);
+    cursor: pointer; transition: all 0.15s ease; font-family: inherit;
+  }
+  .starter:hover { border-color: var(--stable); color: var(--stable); background: var(--paper); }
+
+  .chat-response {
+    margin-top: 20px; padding: 24px; background: var(--paper);
+    border-radius: 8px; border-left: 3px solid var(--fresh);
+    display: none;
+  }
+  .chat-response.visible { display: block; }
+  .chat-response.loading { color: var(--ink-muted); font-style: italic; }
+  .chat-response-text {
+    font-size: 14.5px; line-height: 1.65; color: var(--ink);
+    white-space: pre-wrap;
+  }
+  .chat-response-text strong { color: var(--stable); font-weight: 600; }
+  .chat-error { color: var(--passionate); font-size: 13px; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    background: var(--stable-dark); color: rgba(255,255,255,0.7);
+    padding: 24px 32px; text-align: center;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  footer strong { color: var(--fresh); }
+
+  @media (max-width: 768px) {
+    .hero { padding: 40px 24px 32px; }
+    .cats { grid-template-columns: 1fr; }
+    .cat + .cat { border-left: none; border-top: 1px solid var(--rule); }
+    .exp-grid { grid-template-columns: 1fr; }
+    .bubble-field { height: 600px; }
+    .bubble { max-width: 90%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============== PASSPHRASE GATE ============== -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-title">Internal — passphrase required</div>
+    <div class="gate-sub">This brief contains real transcript content from internal meetings. Drop the passphrase and we're in.</div>
+    <input type="password" class="gate-input" id="gate-input" placeholder="Passphrase" autocomplete="off">
+    <button class="gate-btn" id="gate-btn">Unlock</button>
+    <div class="gate-error" id="gate-error"></div>
+  </div>
+</div>
+
+<!-- ============== HERO ============== -->
+<header class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-line"></span>
+      <span class="hero-eyebrow-text">For Erica · Minneapolis brief</span>
+    </div>
+    <h1 class="hero-title">Out of the parking lot<br>and <em>into the fire.</em></h1>
+    <p class="hero-sub">Three days, a lot got named — and finally, somewhere to put it. <strong>Tap any bubble</strong> to open the moment behind it. Then <strong>scroll on down and ask the chat</strong> anything from the room — answers come back with the actual quotes.</p>
+  </div>
+</header>
+
+<!-- ============== CATEGORY STRIP ============== -->
+<div class="cats">
+  <div class="cat">
+    <div class="cat-head">
+      <span class="cat-dot mess"></span>
+      <span class="cat-name">The mess</span>
+    </div>
+    <div class="cat-desc">What's breaking underneath</div>
+  </div>
+  <div class="cat">
+    <div class="cat-head">
+      <span class="cat-dot model"></span>
+      <span class="cat-name">The model</span>
+    </div>
+    <div class="cat-desc">The shape that's forming</div>
+  </div>
+  <div class="cat">
+    <div class="cat-head">
+      <span class="cat-dot moment"></span>
+      <span class="cat-name">The moment</span>
+    </div>
+    <div class="cat-desc">What got named out loud</div>
+  </div>
+</div>
+
+<!-- ============== BUBBLES ============== -->
+<section class="bubbles-section">
+  <div class="bubbles-inner">
+    <div class="bubbles-hint">Drifting quotes — tap any to dig in</div>
+    <div class="bubble-field" id="bubble-field"></div>
+  </div>
+</section>
+
+<!-- ============== EXPANSION PANEL ============== -->
+<div class="expansion" id="expansion">
+  <div class="exp-inner">
+    <div class="exp-tag" id="exp-tag">The mess</div>
+    <div class="exp-head" id="exp-head"></div>
+    <div class="exp-context" id="exp-context"></div>
+    <div class="exp-grid">
+      <div class="exp-block">
+        <div class="exp-label">What it means</div>
+        <div class="exp-text" id="exp-implication"></div>
+      </div>
+      <div class="exp-block">
+        <div class="exp-label">Where to point it</div>
+        <div class="exp-text" id="exp-next"></div>
+      </div>
+    </div>
+    <button class="exp-close" onclick="document.getElementById('expansion').classList.remove('open')">Close ✕</button>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ============== CHAT ============== -->
+<section class="chat-section" id="chat-section">
+  <div class="chat-inner">
+    <div class="chat-eyebrow">
+      <span class="chat-eyebrow-line"></span>
+      <span class="chat-eyebrow-text">The chat</span>
+    </div>
+    <h2 class="chat-title">Ask anything we said</h2>
+    <div class="chat-box">
+      <input class="chat-input" id="chat-input" type="text" placeholder="e.g. what did we actually land on for Fran Connect?">
+      <button class="chat-send" id="chat-send">Ask</button>
+    </div>
+    <div class="starters" id="starters">
+      <button class="starter">What did Christy decide about coaches?</button>
+      <button class="starter">Where did we land on Fran Connect?</button>
+      <button class="starter">What gaps did we name that still need filling?</button>
+      <button class="starter">Who's leading the milestone project now?</button>
+    </div>
+    <div class="chat-response" id="chat-response">
+      <div class="chat-response-text" id="chat-response-text"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span><strong>erica.benbreaux.com</strong> · Internal · Working doc</span>
+</footer>
+
+<!-- ============== DATA ============== -->
+<script>
+// ============================================================
+// CONFIGURATION — update WORKER_URL after deploying Cloudflare Worker
+// ============================================================
+const WORKER_URL = 'https://erica-transcripts.bhbreaux.workers.dev';
+
+// ============================================================
+// BUBBLE POOL — rotates through these. ~12 quotes, 6 visible at a time.
+// Each id maps to an expansion card below.
+// ============================================================
+const BUBBLES = [
+  { id: 'data-fight', cat: 'mess', quote: "I don't know why I can't pull this list from HubSpot.", speaker: 'Jenny', context: 'on the data fight' },
+  { id: 'manualness', cat: 'mess', quote: "The manualness of all this is shocking.", speaker: 'Jenny', context: 'on operational debt' },
+  { id: 'staggering', cat: 'mess', quote: "The inefficiencies are completely staggering.", speaker: 'Heather', context: 'on the onboarding lift' },
+  { id: 'pendulum', cat: 'mess', quote: "Things were so locked in. So they swung the pendulum.", speaker: 'Christy', context: 'on access lockdown' },
+  { id: 'wash-hands', cat: 'mess', quote: "We wash our hands as soon as it's rolled out.", speaker: 'Erica', context: 'naming the rollout debt' },
+  { id: 'major-minor', cat: 'model', quote: "Everyone has a major and a minor.", speaker: 'Christy', context: 'on how the team scales' },
+  { id: 'plug-play', cat: 'model', quote: "Every time there's a project, we already know where it goes.", speaker: 'Erica', context: 'on the operating model' },
+  { id: 'unit', cat: 'model', quote: "I see you two as kind of a unit right now.", speaker: 'Christy', context: 'on Heather + Ben' },
+  { id: 'inherited', cat: 'model', quote: "Now is your chance.", speaker: 'Trish', context: 'on the role redesign' },
+  { id: 'painful-part', cat: 'moment', quote: "We're in the painful part.", speaker: 'Trish', context: 'on the scale-up zone' },
+  { id: 'sla-solving', cat: 'moment', quote: "SLAs versus solving the problem.", speaker: 'Christy', context: 'on what we optimize for' },
+  { id: 'flipped', cat: 'moment', quote: "We've been flipped on our head.", speaker: 'Christy', context: 'on tech-first vs business-first' },
+  { id: 'next-to-impossible', cat: 'moment', quote: "Getting answers is next to impossible.", speaker: 'Erica', context: 'on the data hunt' }
+];
+
+// ============================================================
+// EXPANSION CARDS — keyed by bubble id
+// ============================================================
+const CARDS = {
+  'data-fight': {
+    head: "Operational data lives in five spreadsheets instead of one system",
+    context: "The milestone project surfaced the deeper issue: there is no single place to ask who this franchisee is, when they started, who their coach is, what their rev share looks like. The team reconstructs this by hand for every request.",
+    implication: "Every cross-functional analysis is built from sources that don't reconcile. The risk isn't speed — it's accuracy when leadership asks a question.",
+    next: "Frame the Fran Connect business case around 'one source of truth' rather than 'a better system.' That language already lives in the room."
+  },
+  'manualness': {
+    head: "Manual annual reporting and verification cycles add up",
+    context: "Accounting runs an annual email-account verification by hand because no system inventories active accounts against franchise rosters. Same pattern for franchise agreements, territory data, rev share reconciliation.",
+    implication: "The cost isn't only ours. Franchisees experience this as friction — they ask, we go pull, they wait. It erodes the network trust Christy measures against.",
+    next: "Catalog every annual or quarterly manual task by department. Use it as the inefficiency baseline for the Fran Connect business case."
+  },
+  'staggering': {
+    head: "Onboarding is a full-time job pretending to be a side responsibility",
+    context: "Heather named what the team had been working around: bringing 45 new franchises on this year is not absorbable by the current ops model. The inefficiencies stack faster than the team can clear them.",
+    implication: "This becomes the headcount-vs-tooling decision. Either Fran Connect, or a new operations hire, or both. Status quo is the option that breaks something visible.",
+    next: "Pair the inefficiency catalog (above) with growth projections. Make the business case quantitative — what does each manual task cost across 45 new franchises."
+  },
+  'pendulum': {
+    head: "Permission lockdown is the new gatekeeping",
+    context: "After a security incident, access was tightened across the board. The intent was right; the calibration wasn't. Power BI dashboards the team is expected to monitor aren't accessible to the people who need them.",
+    implication: "Customer Success is being asked to drive adoption of tools it can't fully see inside. That gap shows up as slower responses to the network, not better security.",
+    next: "Erica leads an access audit across the CS team. One-page deliverable: name, role, tool, current access, required access, justification. Then Christy fights the fight."
+  },
+  'wash-hands': {
+    head: "Rollouts end at launch instead of at adoption",
+    context: "Heather and Erica heard this directly from Jeff at the offsite dinner. Home office rolls something out and walks away. Assessments shipped, but enablement and follow-up stalled. Yoodli is the active version of the same pattern.",
+    implication: "Adoption is the actual measure — and adoption is being left to franchisees to figure out. Christy's #1 metric (network trust) erodes here invisibly.",
+    next: "Define a standard post-launch enablement package every rollout must include. The template lives in 'The model' — every rollout flows through the same anatomy."
+  },
+  'major-minor': {
+    head: "Everyone has a 'major' day job and a 'minor' cross-functional contribution",
+    context: "Christy named the model out loud for the first time in Minneapolis. Your major is what's on your job description; the minor is the second area where you contribute because of experience or interest. Kim is currently inverted (marketing has become her major). That gets re-flipped as the team scales.",
+    implication: "This is how the team scales without losing its bench. It also creates a development path — the minor today is the major someone grows into.",
+    next: "Each team member names their proposed minor in their next 1:1 with Christy. Document it in Lattice."
+  },
+  'plug-play': {
+    head: "Every rollout flows through the same anatomy",
+    context: "You proposed the model and Christy whiteboarded it: ops → implementation → enablement → comms → maintenance. Every project routes through the same lanes, so nothing falls off after launch.",
+    implication: "This is the structural answer to most of 'The mess.' If the model holds, the rollout debt stops accumulating.",
+    next: "Pilot the model on the SPE launch in July. Document what works and what gets cut on the first run."
+  },
+  'unit': {
+    head: "Customer Success owns implementation, support, training, and client management",
+    context: "Heather and Ben are the named unit. Their lane covers tech-stack implementation (HubSpot, ZoomInfo, Yoodli, Compass), franchisee-facing training, and the connective tissue with the network's client success function.",
+    implication: "Customer Success is no longer ambiguous as a function. The trade-off Heather and Ben need to manage is depth on tooling versus breadth across the network.",
+    next: "Ben to draft a 'what does Customer Success own' one-pager. Heather reviews. Locks the boundary before September."
+  },
+  'inherited': {
+    head: "The Trish replacement role is being designed in real time",
+    context: "Trish noted that her seat is an opportunity, not a slot to refill. The new role gets built around what the team actually needs, not what she happened to do.",
+    implication: "This is a one-shot opportunity to fill a known gap rather than backfill a known role. The longer it stays open, the more pressure builds on existing seats.",
+    next: "Erica drafts the role profile this month. Aligns with Christy before posting."
+  },
+  'painful-part': {
+    head: "We're between a private company and a scalable enterprise — and it hurts",
+    context: "Trish named the friction underneath everything: the team is operating with the systems of a smaller company but the volume and expectations of a much larger one. That gap is where the operational debt lives.",
+    implication: "Most of what surfaced in Minneapolis traces back to this. Naming it is half the battle — the other half is using it as the rationale for investment asks.",
+    next: "Use this phrase verbatim in the Fran Connect business case. Leadership has been hearing the symptoms; they haven't heard the diagnosis this cleanly."
+  },
+  'sla-solving': {
+    head: "Zendesk routing optimizes for closure speed, not for solving",
+    context: "Multiple departments noted Zendesk has shifted from a help channel to a ticket-closure metric. Coaches don't go in with regularity. Duplicate tickets get created because nothing surfaces the existing ones.",
+    implication: "The ticketing system has become a proxy for service quality. Speed is what's tracked; whether the franchisee got the answer isn't.",
+    next: "Audit current Zendesk infrastructure. Recommend whether to integrate into HubSpot (HubSupport exists) or restructure within Zendesk."
+  },
+  'flipped': {
+    head: "Tech-first thinking has been driving business design — Minneapolis flips it back",
+    context: "Christy named the inversion: we've been operationalizing the tools we have, when we should be defining the business need first and choosing tools to support it. The major/minor model and the rollout anatomy both follow from this re-flip.",
+    implication: "This is the lens for every future tooling decision — including Fran Connect. The question is no longer 'can the system do this' but 'what does the business need, and does this system support it.'",
+    next: "Use this framing explicitly in any tooling business case from here forward. It shifts the burden of proof from us to the tool."
+  },
+  'next-to-impossible': {
+    head: "Getting answers from the current system is next to impossible",
+    context: "Erica named the experience anyone new to the organization runs into. The institutional knowledge isn't documented — it lives in people. Cross-referencing data across spreadsheets surfaces inconsistencies but no source of truth.",
+    implication: "Onboarding any new hire (or replacing Trish) compounds this. Every new person re-discovers the same broken paths.",
+    next: "Tie this to the access audit and the Fran Connect case. All three are the same problem at different scales."
+  }
+};
+
+// ============================================================
+// PASSPHRASE GATE
+// ============================================================
+function checkGate() {
+  if (sessionStorage.getItem('erica-unlocked') === 'true') {
+    document.getElementById('gate').classList.add('hidden');
+    initApp();
+  }
+}
+
+document.getElementById('gate-btn').addEventListener('click', tryUnlock);
+document.getElementById('gate-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryUnlock();
+});
+
+async function tryUnlock() {
+  const pass = document.getElementById('gate-input').value;
+  const err = document.getElementById('gate-error');
+  err.textContent = '';
+  if (!pass) { err.textContent = 'Need a passphrase.'; return; }
+  try {
+    const res = await fetch(WORKER_URL + '/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase: pass })
+    });
+    if (!res.ok) throw new Error('bad');
+    const data = await res.json();
+    if (data.ok) {
+      sessionStorage.setItem('erica-unlocked', 'true');
+      sessionStorage.setItem('erica-pass', pass);
+      document.getElementById('gate').classList.add('hidden');
+      initApp();
+    } else {
+      err.textContent = 'Not quite. Try again.';
+    }
+  } catch (e) {
+    err.textContent = "Can't reach the server. Try again in a sec.";
+  }
+}
+
+checkGate();
+
+// ============================================================
+// APP INIT — runs after gate cleared
+// ============================================================
+function initApp() {
+  renderBubbles();
+  setInterval(rotateBubbles, 12000); // rotate one bubble every 12s
+  setupChat();
+  setupScrollFade();
+  setupStarters();
+}
+
+// ============================================================
+// BUBBLE FIELD
+// ============================================================
+const POSITIONS = [
+  { top: '4%',  left: '3%',  drift: 'drift1', dur: 22 },
+  { top: '18%', right: '4%', drift: 'drift2', dur: 26 },
+  { top: '46%', left: '24%', drift: 'drift3', dur: 28 },
+  { top: '56%', right: '14%', drift: 'drift1', dur: 24 },
+  { top: '8%',  left: '40%', drift: 'drift2', dur: 30 },
+  { bottom: '4%', left: '6%', drift: 'drift3', dur: 26 }
+];
+const ARROWS = ['arrow-br','arrow-bl','arrow-bc','arrow-br','arrow-bl','arrow-bc'];
+
+let activeBubbles = []; // currently displayed bubble ids
+let bubblePool = [];    // unused bubble ids waiting to rotate in
+
+function renderBubbles() {
+  const field = document.getElementById('bubble-field');
+  field.innerHTML = '';
+  // Shuffle the full pool
+  const shuffled = [...BUBBLES].sort(() => Math.random() - 0.5);
+  activeBubbles = shuffled.slice(0, 6);
+  bubblePool = shuffled.slice(6);
+  activeBubbles.forEach((b, i) => {
+    const el = makeBubbleEl(b, i);
+    field.appendChild(el);
+  });
+}
+
+function makeBubbleEl(b, posIdx) {
+  const pos = POSITIONS[posIdx];
+  const arrow = ARROWS[posIdx];
+  const el = document.createElement('div');
+  el.className = `bubble ${b.cat} ${arrow}`;
+  el.dataset.id = b.id;
+  el.dataset.pos = posIdx;
+  Object.assign(el.style, {
+    top: pos.top || 'auto',
+    left: pos.left || 'auto',
+    right: pos.right || 'auto',
+    bottom: pos.bottom || 'auto',
+    animation: `bubbleAppear 0.8s ease-out forwards, ${pos.drift} ${pos.dur}s ease-in-out infinite`,
+    animationDelay: `${posIdx * 0.15}s, ${posIdx * 0.4}s`
+  });
+  el.innerHTML = `
+    <div class="bubble-quote">"${b.quote}"</div>
+    <div class="bubble-attr"><strong>${b.speaker}</strong> · ${b.context}</div>
+  `;
+  el.addEventListener('click', () => openExpansion(b.id, b.cat));
+  return el;
+}
+
+function rotateBubbles() {
+  if (bubblePool.length === 0) return;
+  const field = document.getElementById('bubble-field');
+  const bubbleEls = Array.from(field.querySelectorAll('.bubble'));
+  if (bubbleEls.length === 0) return;
+
+  // Pick a random visible bubble to swap out
+  const swapIdx = Math.floor(Math.random() * bubbleEls.length);
+  const oldEl = bubbleEls[swapIdx];
+  const oldId = oldEl.dataset.id;
+  const posIdx = parseInt(oldEl.dataset.pos);
+
+  oldEl.classList.add('fading');
+
+  setTimeout(() => {
+    bubblePool.push(BUBBLES.find(b => b.id === oldId));
+    const newBubble = bubblePool.shift();
+    activeBubbles[swapIdx] = newBubble;
+    const newEl = makeBubbleEl(newBubble, posIdx);
+    field.replaceChild(newEl, oldEl);
+  }, 600);
+}
+
+// ============================================================
+// EXPANSION
+// ============================================================
+function openExpansion(id, cat) {
+  const card = CARDS[id];
+  if (!card) return;
+  const exp = document.getElementById('expansion');
+  const tag = document.getElementById('exp-tag');
+  tag.className = `exp-tag ${cat}`;
+  tag.textContent = cat === 'mess' ? 'The mess' : cat === 'model' ? 'The model' : 'The moment';
+  document.getElementById('exp-head').textContent = card.head;
+  document.getElementById('exp-context').textContent = card.context;
+  document.getElementById('exp-implication').textContent = card.implication;
+  document.getElementById('exp-next').textContent = card.next;
+  exp.classList.add('open');
+  setTimeout(() => exp.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+}
+
+// ============================================================
+// CHAT
+// ============================================================
+function setupChat() {
+  const input = document.getElementById('chat-input');
+  const send = document.getElementById('chat-send');
+  send.addEventListener('click', sendChat);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendChat();
+  });
+}
+
+function setupStarters() {
+  document.querySelectorAll('.starter').forEach(s => {
+    s.addEventListener('click', () => {
+      document.getElementById('chat-input').value = s.textContent;
+      document.getElementById('chat-input').focus();
+      sendChat();
+    });
+  });
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const send = document.getElementById('chat-send');
+  const responseBox = document.getElementById('chat-response');
+  const responseText = document.getElementById('chat-response-text');
+  const q = input.value.trim();
+  if (!q) return;
+
+  send.disabled = true;
+  responseBox.classList.add('visible', 'loading');
+  responseText.textContent = 'Looking through the room…';
+
+  try {
+    const res = await fetch(WORKER_URL + '/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        passphrase: sessionStorage.getItem('erica-pass'),
+        question: q
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    responseBox.classList.remove('loading');
+    responseText.textContent = data.answer || 'No answer came back.';
+  } catch (e) {
+    responseBox.classList.remove('loading');
+    responseText.innerHTML = `<span class="chat-error">Something broke: ${e.message}. Try again in a moment.</span>`;
+  } finally {
+    send.disabled = false;
+  }
+}
+
+// ============================================================
+// SCROLL FADE for chat section
+// ============================================================
+function setupScrollFade() {
+  const chatSection = document.getElementById('chat-section');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.15) {
+        chatSection.classList.add('visible');
+      } else if (entry.intersectionRatio < 0.05) {
+        chatSection.classList.remove('visible');
+      }
+    });
+  }, { threshold: [0, 0.05, 0.15, 0.3] });
+  observer.observe(chatSection);
+}
+</script>
+
+</body>
+</html>
