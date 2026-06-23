@@ -156,7 +156,7 @@
   .bubble {
     position: absolute; padding: 16px 18px 14px;
     border-radius: 16px; cursor: pointer;
-    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, opacity 0.6s ease;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, opacity 0.8s ease;
     max-width: 250px; min-width: 180px;
     box-shadow: 0 2px 8px rgba(33, 36, 92, 0.08);
     opacity: 0;
@@ -268,9 +268,10 @@
   /* ---------- Chat ---------- */
   .chat-section {
     background: #fff; padding: 48px 32px 56px;
-    opacity: 0; transform: translateY(24px);
+    opacity: 1; transform: translateY(0);
     transition: opacity 0.7s ease, transform 0.7s ease;
   }
+  .chat-section.entering { opacity: 0; transform: translateY(24px); }
   .chat-section.visible { opacity: 1; transform: translateY(0); }
   .chat-inner { max-width: 1100px; margin: 0 auto; }
   .chat-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
@@ -668,27 +669,40 @@ function scheduleBubbleRotation(posIdx, cycleMs) {
 
 function swapBubbleAtPos(posIdx) {
   if (bubblePool.length === 0) {
-    // Refill pool from bubbles not currently active
     const activeIds = new Set(activeBubbles.map(b => b && b.id));
     bubblePool = BUBBLES.filter(b => !activeIds.has(b.id)).sort(() => Math.random() - 0.5);
   }
   if (bubblePool.length === 0) return;
 
   const field = document.getElementById('bubble-field');
-  const oldEl = field.querySelector(`.bubble[data-pos="${posIdx}"]`);
-  if (!oldEl) return;
+  const el = field.querySelector(`.bubble[data-pos="${posIdx}"]`);
+  if (!el) return;
 
-  const oldId = oldEl.dataset.id;
-  oldEl.classList.add('fading');
+  const oldId = el.dataset.id;
+  const newBubble = bubblePool.shift();
+  const oldBubble = BUBBLES.find(b => b.id === oldId);
+  if (oldBubble) bubblePool.push(oldBubble);
+  activeBubbles[posIdx] = newBubble;
+
+  // Phase 1: fade out in place (don't touch animation or DOM position)
+  el.classList.add('fading');
 
   setTimeout(() => {
-    const oldBubble = BUBBLES.find(b => b.id === oldId);
-    if (oldBubble) bubblePool.push(oldBubble);
-    const newBubble = bubblePool.shift();
-    activeBubbles[posIdx] = newBubble;
-    const newEl = makeBubbleEl(newBubble, posIdx);
-    if (oldEl.parentNode) oldEl.parentNode.replaceChild(newEl, oldEl);
-  }, 600);
+    // Phase 2: swap content + category class while invisible, keep element alive
+    el.classList.remove('mess', 'model', 'moment');
+    el.classList.add(newBubble.cat);
+    el.dataset.id = newBubble.id;
+    el.innerHTML = `
+      <div class="bubble-quote">"${newBubble.quote}"</div>
+      <div class="bubble-attr"><strong>${newBubble.speaker}</strong> · ${newBubble.context}</div>
+    `;
+    // Re-bind click for new bubble
+    el.onclick = () => openExpansion(newBubble.id, newBubble.cat);
+    // Phase 3: fade back in
+    requestAnimationFrame(() => {
+      el.classList.remove('fading');
+    });
+  }, 800);
 }
 
 function makeBubbleEl(b, posIdx) {
@@ -704,7 +718,7 @@ function makeBubbleEl(b, posIdx) {
     right: pos.right || 'auto',
     bottom: pos.bottom || 'auto',
     animation: `bubbleAppear 0.8s ease-out forwards, ${pos.drift} ${pos.dur}s ease-in-out infinite`,
-    animationDelay: `${posIdx * 0.15}s, ${posIdx * 0.4}s`
+    animationDelay: `${posIdx * 0.12}s, ${posIdx * 0.4}s`
   });
   el.innerHTML = `
     <div class="bubble-quote">"${b.quote}"</div>
@@ -809,17 +823,11 @@ async function sendChat() {
 // SCROLL FADE for chat section
 // ============================================================
 function setupScrollFade() {
+  // Chat section is visible by default now. This observer just ensures it stays
+  // visible (defensive — handles edge cases without ever removing the class).
   const chatSection = document.getElementById('chat-section');
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && entry.intersectionRatio > 0.15) {
-        chatSection.classList.add('visible');
-      } else if (entry.intersectionRatio < 0.05) {
-        chatSection.classList.remove('visible');
-      }
-    });
-  }, { threshold: [0, 0.05, 0.15, 0.3] });
-  observer.observe(chatSection);
+  if (!chatSection) return;
+  chatSection.classList.add('visible');
 }
 </script>
 
