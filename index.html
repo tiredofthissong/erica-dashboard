@@ -574,7 +574,7 @@ const CARDS = {
 // PASSPHRASE GATE
 // ============================================================
 function checkGate() {
-  if (sessionStorage.getItem('erica-unlocked') === 'true') {
+  if (localStorage.getItem('erica-unlocked') === 'true') {
     document.getElementById('gate').classList.add('hidden');
     initApp();
   }
@@ -599,8 +599,8 @@ async function tryUnlock() {
     if (!res.ok) throw new Error('bad');
     const data = await res.json();
     if (data.ok) {
-      sessionStorage.setItem('erica-unlocked', 'true');
-      sessionStorage.setItem('erica-pass', pass);
+      localStorage.setItem('erica-unlocked', 'true');
+      localStorage.setItem('erica-pass', pass);
       document.getElementById('gate').classList.add('hidden');
       initApp();
     } else {
@@ -618,7 +618,6 @@ checkGate();
 // ============================================================
 function initApp() {
   renderBubbles();
-  setInterval(rotateBubbles, 12000); // rotate one bubble every 12s
   setupChat();
   setupScrollFade();
   setupStarters();
@@ -646,14 +645,50 @@ let bubblePool = [];    // unused bubble ids waiting to rotate in
 function renderBubbles() {
   const field = document.getElementById('bubble-field');
   field.innerHTML = '';
-  // Shuffle the full pool
   const shuffled = [...BUBBLES].sort(() => Math.random() - 0.5);
   activeBubbles = shuffled.slice(0, 9);
   bubblePool = shuffled.slice(9);
   activeBubbles.forEach((b, i) => {
     const el = makeBubbleEl(b, i);
     field.appendChild(el);
+    // Stagger each bubble's rotation: 3s-5s display window, offset by position
+    const cycleMs = 3000 + (i * 300) + Math.random() * 2000; // 3-5s staggered
+    scheduleBubbleRotation(i, cycleMs);
   });
+}
+
+function scheduleBubbleRotation(posIdx, cycleMs) {
+  setTimeout(() => {
+    swapBubbleAtPos(posIdx);
+    // Re-schedule with slight randomness to avoid lockstep
+    const nextCycle = 3000 + Math.random() * 2000;
+    scheduleBubbleRotation(posIdx, nextCycle);
+  }, cycleMs);
+}
+
+function swapBubbleAtPos(posIdx) {
+  if (bubblePool.length === 0) {
+    // Refill pool from bubbles not currently active
+    const activeIds = new Set(activeBubbles.map(b => b && b.id));
+    bubblePool = BUBBLES.filter(b => !activeIds.has(b.id)).sort(() => Math.random() - 0.5);
+  }
+  if (bubblePool.length === 0) return;
+
+  const field = document.getElementById('bubble-field');
+  const oldEl = field.querySelector(`.bubble[data-pos="${posIdx}"]`);
+  if (!oldEl) return;
+
+  const oldId = oldEl.dataset.id;
+  oldEl.classList.add('fading');
+
+  setTimeout(() => {
+    const oldBubble = BUBBLES.find(b => b.id === oldId);
+    if (oldBubble) bubblePool.push(oldBubble);
+    const newBubble = bubblePool.shift();
+    activeBubbles[posIdx] = newBubble;
+    const newEl = makeBubbleEl(newBubble, posIdx);
+    if (oldEl.parentNode) oldEl.parentNode.replaceChild(newEl, oldEl);
+  }, 600);
 }
 
 function makeBubbleEl(b, posIdx) {
@@ -679,28 +714,7 @@ function makeBubbleEl(b, posIdx) {
   return el;
 }
 
-function rotateBubbles() {
-  if (bubblePool.length === 0) return;
-  const field = document.getElementById('bubble-field');
-  const bubbleEls = Array.from(field.querySelectorAll('.bubble'));
-  if (bubbleEls.length === 0) return;
-
-  // Pick a random visible bubble to swap out
-  const swapIdx = Math.floor(Math.random() * bubbleEls.length);
-  const oldEl = bubbleEls[swapIdx];
-  const oldId = oldEl.dataset.id;
-  const posIdx = parseInt(oldEl.dataset.pos);
-
-  oldEl.classList.add('fading');
-
-  setTimeout(() => {
-    bubblePool.push(BUBBLES.find(b => b.id === oldId));
-    const newBubble = bubblePool.shift();
-    activeBubbles[swapIdx] = newBubble;
-    const newEl = makeBubbleEl(newBubble, posIdx);
-    field.replaceChild(newEl, oldEl);
-  }, 600);
-}
+// rotateBubbles replaced by scheduleBubbleRotation + swapBubbleAtPos
 
 // ============================================================
 // EXPANSION
@@ -775,7 +789,7 @@ async function sendChat() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        passphrase: sessionStorage.getItem('erica-pass'),
+        passphrase: localStorage.getItem('erica-pass'),
         question: q
       })
     });
